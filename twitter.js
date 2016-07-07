@@ -1,15 +1,21 @@
+// **********************************************************************************************
 // requiring dependancies
+// **********************************************************************************************
 var _ = require('lodash'),
+  redis = require ('redis'),
+  env = require('node-env-file'),
   twit = require('twit'),
   puny = require('punycode'),
 	twitter = new twit({
-		  consumer_key:         'DsgLPSlMbzRjn8YaQsRPyn2CO',
-		  consumer_secret:      'kG8DCILnTVABXXltqgU6oqcmGH38g4TA0UoMMhw9LCic42z1GU',
-		  access_token:         '3328978788-OFHcx34tmQE55xq5q1ULadnkWMzBd2wAwG2PVTK',
-		  access_token_secret:  'DEuxocz29DiSCtAxfeIAJyzAKNr8Lva7qckuWMpEkV5Uh'
+		  consumer_key: process.env.TWITTER_CONSUMER_KEY,
+      consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
+      access_token: process.env.TWITTER_ACCESS_TOKEN_KEY,
+      access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 	});
 
-//
+// **********************************************************************************************
+// create and object with null values. This is the object that will be used on clinent side
+// **********************************************************************************************
 var clientObject = {
   numberOfTweets: null,
   avgTweetSec: null,
@@ -23,7 +29,9 @@ var clientObject = {
   topDomains: null,
 };
 
-//creating variables to keep track of metrics
+// **********************************************************************************************
+// creating variables to keep track of metrics
+// **********************************************************************************************
 var countTweets = 1,
  seconds = 1,
  minutes = 1,
@@ -35,6 +43,16 @@ var countTweets = 1,
  containsURL = 0,
  containsPhoto = 0,
  containsEmoji = 0;
+
+// **********************************************************************************************
+// set up a redis connection
+// **********************************************************************************************
+var redis;
+  if (process.env.REDIS_URL) {
+    redis = require('redis').createClient(process.env.REDIS_URL);
+  } else {
+    redis = require('redis').createClient();
+  }
 
 var stream = twitter.stream('statuses/sample');
 stream.on('tweet', function(tweet) { 
@@ -67,7 +85,7 @@ stream.on('tweet', function(tweet) {
         containsURL++;
       }
 
-      
+        //we assume that any unicode straing longer than 6 characters (assuming all emojis are )
         arrayChar = _.split(tweet.text, "", tweet.text.length);
         newArrayChar = [];
         for(i=0;i<arrayChar.length;i++) {
@@ -78,8 +96,12 @@ stream.on('tweet', function(tweet) {
           }
         }
 
-      // var res = tweet.text.split("");
-      // console.log(res);
+        // // Publish it
+        // redis.publish('clientObject', JSON.stringify(clientObject));
+
+        // // Persist it to a Redis list
+        // redis.rpush('stream:clientObject', JSON.stringify(clientObject));});
+
   }
 
   // var res = tweet.text.split("");
